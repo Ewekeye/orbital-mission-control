@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Orbital Mission Control</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <div class="header-logo">▲</div>
+      <div>
+        <div class="header-title">ORION CONTROL</div>
+        <div class="header-sub">SATELLITE OPERATIONS CENTER</div>
+      </div>
+    </div>
+    <div class="header-center">
+      <div class="status-pill" id="connectionStatus">
+        <span class="status-dot"></span>
+        <div>
+          <div class="status-text">CONNECTING...</div>
+          <div class="status-sub" id="linkStatus">ESTABLISHING LINK</div>
+        </div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="clock-block">
+        <div class="clock-label">UTC TIME</div>
+        <div class="clock" id="utcClock">--:--:--</div>
+        <div class="clock-date" id="utcDate">-- --- ----</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN GRID -->
+  <main class="grid">
+
+    <!-- LEFT COLUMN -->
+    <aside class="left-col">
+
+      <!-- SATELLITE ASSETS -->
+      <section class="panel">
+        <div class="panel-header">
+          SATELLITE ASSETS
+          <span class="panel-badge" id="activeCount">3 ACTIVE</span>
+        </div>
+        <div class="sat-list" id="satList">
+          <div class="sat-item active" data-norad="25544">
+            <div class="sat-indicator"></div>
+            <div class="sat-info">
+              <div class="sat-name">ISS (ZARYA)</div>
+              <div class="sat-norad">NORAD 25544</div>
+            </div>
+            <div class="sat-status nominal">NOMINAL</div>
+          </div>
+          <div class="sat-item" data-norad="20580">
+            <div class="sat-indicator"></div>
+            <div class="sat-info">
+              <div class="sat-name">HUBBLE</div>
+              <div class="sat-norad">NORAD 20580</div>
+            </div>
+            <div class="sat-status nominal">NOMINAL</div>
+          </div>
+          <div class="sat-item" data-norad="33591">
+            <div class="sat-indicator"></div>
+            <div class="sat-info">
+              <div class="sat-name">NOAA 19</div>
+              <div class="sat-norad">NORAD 33591</div>
+            </div>
+            <div class="sat-status nominal">NOMINAL</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- GROUND STATIONS -->
+      <section class="panel">
+        <div class="panel-header">
+          GROUND STATIONS
+          <span class="panel-badge green">5 ONLINE</span>
+        </div>
+        <div id="groundStationList"></div>
+      </section>
+
+      <!-- ORBITAL PARAMETERS -->
+      <section class="panel">
+        <div class="panel-header">ORBITAL PARAMETERS</div>
+        <div class="orbital-grid">
+          <div class="orbital-item">
+            <div class="orbital-icon">◎</div>
+            <div class="orbital-label">ALTITUDE</div>
+            <div class="orbital-value" id="posAlt">--</div>
+            <div class="orbital-unit">KM</div>
+          </div>
+          <div class="orbital-item">
+            <div class="orbital-icon">⟳</div>
+            <div class="orbital-label">VELOCITY</div>
+            <div class="orbital-value" id="posVel">--</div>
+            <div class="orbital-unit">KM/S</div>
+          </div>
+          <div class="orbital-item">
+            <div class="orbital-icon">∠</div>
+            <div class="orbital-label">INCLINATION</div>
+            <div class="orbital-value" id="posInc">--</div>
+            <div class="orbital-unit">DEG</div>
+          </div>
+          <div class="orbital-item">
+            <div class="orbital-icon">◷</div>
+            <div class="orbital-label">PERIOD</div>
+            <div class="orbital-value" id="posPeriod">--</div>
+            <div class="orbital-unit">MIN</div>
+          </div>
+        </div>
+      </section>
+
+    </aside>
+
+    <!-- CENTER COLUMN -->
+    <section class="center-col">
+
+      <!-- MAP -->
+      <div class="panel map-panel">
+        <div class="panel-header">
+          GLOBAL TRACKING MAP
+          <span class="panel-badge live">● LIVE</span>
+        </div>
+        <div id="map"></div>
+        <!-- POSITION STRIP -->
+        <div class="pos-strip">
+          <div class="pos-strip-item">
+            <div class="pos-strip-label">LATITUDE</div>
+            <div class="pos-strip-value" id="posLat">--° N</div>
+          </div>
+          <div class="pos-strip-item">
+            <div class="pos-strip-label">LONGITUDE</div>
+            <div class="pos-strip-value" id="posLon">--° W</div>
+          </div>
+          <div class="pos-strip-item">
+            <div class="pos-strip-label">ECLIPSE</div>
+            <div class="pos-strip-value" id="posEclipse">--</div>
+          </div>
+          <div class="pos-strip-item">
+            <div class="pos-strip-label">LOS IN</div>
+            <div class="pos-strip-value" id="posLos">--:--</div>
+          </div>
+          <div class="pos-strip-item">
+            <div class="pos-strip-label">NEXT AOS</div>
+            <div class="pos-strip-value" id="posAos">-- UTC</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTTOM CHARTS ROW -->
+      <div class="charts-row">
+        <div class="panel chart-panel">
+          <div class="panel-header">
+            SIGNAL STRENGTH
+            <span class="panel-badge">S-BAND</span>
+          </div>
+          <canvas id="signalChart"></canvas>
+        </div>
+        <div class="panel chart-panel">
+          <div class="panel-header">
+            TELEMETRY TREND (1H)
+            <span class="panel-badge">LIVE</span>
+          </div>
+          <canvas id="altChart"></canvas>
+        </div>
+      </div>
+
+      <!-- MISSION LOG -->
+      <div class="panel log-panel">
+        <div class="panel-header">
+          MISSION LOG
+          <button class="clear-btn" id="clearLog">CLEAR</button>
+        </div>
+        <div class="log-container" id="missionLog"></div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN -->
+    <aside class="right-col">
+
+      <!-- SYSTEM HEALTH -->
+      <section class="panel">
+        <div class="panel-header">SYSTEM HEALTH</div>
+
+        <div class="meter-group">
+          <div class="meter-row">
+            <div class="meter-left">
+              <span class="meter-icon">⚡</span>
+              <span class="meter-label">BATTERY</span>
+            </div>
+            <span class="meter-val" id="battVal">--%</span>
+          </div>
+          <div class="meter-track">
+            <div class="meter-fill battery" id="battBar"></div>
+          </div>
+        </div>
+
+        <div class="meter-group">
+          <div class="meter-row">
+            <div class="meter-left">
+              <span class="meter-icon">⛽</span>
+              <span class="meter-label">FUEL LEVEL</span>
+            </div>
+            <span class="meter-val" id="fuelVal">--%</span>
+          </div>
+          <div class="meter-track">
+            <div class="meter-fill fuel" id="fuelBar"></div>
+          </div>
+        </div>
+
+        <div class="meter-group">
+          <div class="meter-row">
+            <div class="meter-left">
+              <span class="meter-icon">🌡</span>
+              <span class="meter-label">TEMPERATURE</span>
+            </div>
+            <span class="meter-val" id="tempVal">--°C</span>
+          </div>
+          <div class="meter-track">
+            <div class="meter-fill temp" id="tempBar"></div>
+          </div>
+        </div>
+
+        <div class="meter-group">
+          <div class="meter-row">
+            <div class="meter-left">
+              <span class="meter-icon">⚡</span>
+              <span class="meter-label">VOLTAGE</span>
+            </div>
+            <span class="meter-val" id="voltVal">-- V</span>
+          </div>
+          <div class="meter-track">
+            <div class="meter-fill voltage" id="voltBar"></div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- TELEMETRY SNAPSHOT -->
+      <section class="panel">
+        <div class="panel-header">TELEMETRY SNAPSHOT</div>
+        <div class="telem-grid">
+          <div class="telem-item">
+            <div class="telem-label">ATTITUDE</div>
+            <div class="telem-value" id="attRoll">--°</div>
+          </div>
+          <div class="telem-item">
+            <div class="telem-label">PANEL TEMP</div>
+            <div class="telem-value" id="attPitch">--°C</div>
+          </div>
+          <div class="telem-item">
+            <div class="telem-label">POWER BUS</div>
+            <div class="telem-value" id="powerBus">-- W</div>
+          </div>
+          <div class="telem-item">
+            <div class="telem-label">DATA RATE</div>
+            <div class="telem-value" id="dataRate">-- MBPS</div>
+          </div>
+          <div class="telem-item">
+            <div class="telem-label">OBC LOAD</div>
+            <div class="telem-value" id="obcLoad">--%</div>
+          </div>
+          <div class="telem-item">
+            <div class="telem-label">MEMORY</div>
+            <div class="telem-value" id="memUsage">--%</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- COMMAND QUEUE -->
+      <section class="panel">
+        <div class="panel-header">
+          COMMAND QUEUE
+          <button class="cmd-btn" id="openCmdModal">NEW CMD</button>
+        </div>
+        <div id="cmdList"></div>
+      </section>
+
+    </aside>
+
+  </main>
+
+  <!-- COMMAND MODAL -->
+  <div class="modal-overlay" id="cmdModal">
+    <div class="modal">
+      <div class="modal-header">
+        QUEUE COMMAND
+        <button class="modal-close" id="closeCmdModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <label class="modal-label">SATELLITE</label>
+        <select class="modal-input" id="cmdSatSelect">
+          <option value="25544">ISS (ZARYA)</option>
+          <option value="20580">HUBBLE</option>
+          <option value="33591">NOAA 19</option>
+        </select>
+        <label class="modal-label">COMMAND NAME</label>
+        <input class="modal-input" id="cmdNameInput"
+               placeholder="e.g. ATTITUDE_ADJ_Z" />
+        <button class="modal-submit" id="submitCmd">QUEUE COMMAND</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPTS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/static/chart.js"></script>
+  <script src="/static/map.js"></script>
+  <script src="/static/dashboard.js"></script>
+
+</body>
+</html>
