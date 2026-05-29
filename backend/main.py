@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 import asyncio
-from backend.ws import telemetry_stream
+from ws import telemetry_stream
 import sys
 import os
 sys.path.append(os.path.dirname(__file__))
